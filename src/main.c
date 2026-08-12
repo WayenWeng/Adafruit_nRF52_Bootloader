@@ -253,11 +253,14 @@ static void check_dfu_mode(void) {
   bool uf2_dfu               = (gpregret == DFU_MAGIC_UF2_RESET);
   bool const dfu_skip        = (gpregret == DFU_MAGIC_SKIP);
 
-  bool const reason_reset_pin = (NRF_POWER->RESETREAS & POWER_RESETREAS_RESETPIN_Msk) ? true : false;
+  // bool const reason_reset_pin = (NRF_POWER->RESETREAS & POWER_RESETREAS_RESETPIN_Msk) ? true : false;
+  bool const reason_reset_pin = false;
 
   // start either serial, uf2 or ble
+  // bool dfu_start = _ota_dfu || serial_only_dfu || uf2_dfu ||
+  //                    (((*dbl_reset_mem) == DFU_DBL_RESET_MAGIC) && reason_reset_pin);
   bool dfu_start = _ota_dfu || serial_only_dfu || uf2_dfu ||
-                   (((*dbl_reset_mem) == DFU_DBL_RESET_MAGIC) && reason_reset_pin);
+                   (((*dbl_reset_mem) == DFU_DBL_RESET_MAGIC));
 
   // Clear GPREGRET if it is our values
   if (dfu_start || dfu_skip) {
@@ -281,30 +284,33 @@ static void check_dfu_mode(void) {
 #endif
 
 #if defined(BUTTON_DFU_V2)
-  uint16_t bnt_cnt = 0;
-  while(1) {
-    if (nrf_gpio_pin_read(BUTTON_DFU_V2)) {
-        bnt_cnt ++;
-    } else {
-        dfu_start = 0;
-        uf2_dfu = 0;
-        nrf_gpio_pin_clear(LED_RED_PIN);
-        nrf_gpio_pin_clear(LED_GREEN_PIN);
-        nrf_gpio_pin_clear(LED_BLUE_PIN);
-        break;
+  if (dfu_start) {
+    nrf_gpio_pin_set(LED_RED_PIN);
+    nrf_gpio_pin_set(LED_GREEN_PIN);
+    nrf_gpio_pin_set(LED_BLUE_PIN);
+  } else {
+    uint16_t bnt_cnt = 0;
+    while(1) {
+        if (nrf_gpio_pin_read(BUTTON_DFU_V2)) {
+            bnt_cnt ++;
+        } else {
+            dfu_start = 0;
+            uf2_dfu = 0;
+            nrf_gpio_pin_clear(LED_RED_PIN);
+            nrf_gpio_pin_clear(LED_GREEN_PIN);
+            nrf_gpio_pin_clear(LED_BLUE_PIN);
+            break;
+        }
+        if (bnt_cnt >= 60) {
+            dfu_start = 1;
+            uf2_dfu = 1;
+            nrf_gpio_pin_set(LED_RED_PIN);
+            nrf_gpio_pin_set(LED_GREEN_PIN);
+            nrf_gpio_pin_set(LED_BLUE_PIN);
+            break;
+        }
+        NRFX_DELAY_MS(50);
     }
-    if (bnt_cnt >= 60) {
-        dfu_start = 1;
-        uf2_dfu = 1;
-        nrf_gpio_pin_set(LED_RED_PIN);
-        nrf_gpio_pin_set(LED_GREEN_PIN);
-        nrf_gpio_pin_set(LED_BLUE_PIN);
-        break;
-    }
-    // nrf_gpio_pin_toggle(LED_RED_PIN);
-    // nrf_gpio_pin_toggle(LED_GREEN_PIN);
-    // nrf_gpio_pin_toggle(LED_BLUE_PIN);
-    NRFX_DELAY_MS(50);
   }
 #endif
 
