@@ -249,7 +249,8 @@ static void check_dfu_mode(void) {
 
   // Serial only mode
   bool const serial_only_dfu = (gpregret == DFU_MAGIC_SERIAL_ONLY_RESET);
-  bool const uf2_dfu         = (gpregret == DFU_MAGIC_UF2_RESET);
+  // bool const uf2_dfu         = (gpregret == DFU_MAGIC_UF2_RESET);
+  bool uf2_dfu               = (gpregret == DFU_MAGIC_UF2_RESET);
   bool const dfu_skip        = (gpregret == DFU_MAGIC_SKIP);
 
   bool const reason_reset_pin = (NRF_POWER->RESETREAS & POWER_RESETREAS_RESETPIN_Msk) ? true : false;
@@ -277,6 +278,34 @@ static void check_dfu_mode(void) {
   // DFU + FRESET are pressed --> OTA
 #if defined(BUTTON_DFU) && defined(BUTTON_DFU_OTA)
   _ota_dfu = _ota_dfu || (button_pressed(BUTTON_DFU) && button_pressed(BUTTON_DFU_OTA));
+#endif
+
+#if defined(BUTTON_DFU_V2)
+  uint16_t bnt_cnt = 0;
+  while(1) {
+    if (nrf_gpio_pin_read(BUTTON_DFU_V2)) {
+        bnt_cnt ++;
+    } else {
+        dfu_start = 0;
+        uf2_dfu = 0;
+        nrf_gpio_pin_clear(LED_RED_PIN);
+        nrf_gpio_pin_clear(LED_GREEN_PIN);
+        nrf_gpio_pin_clear(LED_BLUE_PIN);
+        break;
+    }
+    if (bnt_cnt >= 60) {
+        dfu_start = 1;
+        uf2_dfu = 1;
+        nrf_gpio_pin_set(LED_RED_PIN);
+        nrf_gpio_pin_set(LED_GREEN_PIN);
+        nrf_gpio_pin_set(LED_BLUE_PIN);
+        break;
+    }
+    // nrf_gpio_pin_toggle(LED_RED_PIN);
+    // nrf_gpio_pin_toggle(LED_GREEN_PIN);
+    // nrf_gpio_pin_toggle(LED_BLUE_PIN);
+    NRFX_DELAY_MS(50);
+  }
 #endif
 
   bool const valid_app = bootloader_app_is_valid();

@@ -82,6 +82,9 @@ void board_init(void) {
 #ifdef BUTTON_DFU_OTA
   button_init(BUTTON_DFU_OTA);
 #endif
+#ifdef BUTTON_DFU_V2
+  nrf_gpio_cfg_input(BUTTON_DFU_V2, NRF_GPIO_PIN_PULLDOWN);
+#endif
   NRFX_DELAY_US(100); // wait for the pin state is stable
 
 #if LEDS_NUMBER > 0
@@ -94,29 +97,15 @@ void board_init(void) {
 
 #if LED_RED_PIN
   nrf_gpio_cfg_output(LED_RED_PIN);
-#if LED_STATE_ON == 1
-  nrf_gpio_pin_set(LED_RED_PIN);
-#else
   nrf_gpio_pin_clear(LED_RED_PIN);
 #endif
-#endif
-
 #if LED_GREEN_PIN
   nrf_gpio_cfg_output(LED_GREEN_PIN);
-#if LED_STATE_ON == 1
-  nrf_gpio_pin_set(LED_GREEN_PIN);
-#else
   nrf_gpio_pin_clear(LED_GREEN_PIN);
 #endif
-#endif
-
 #if LED_BLUE_PIN
   nrf_gpio_cfg_output(LED_BLUE_PIN);
-#if LED_STATE_ON == 1
-  nrf_gpio_pin_set(LED_BLUE_PIN);
-#else
   nrf_gpio_pin_clear(LED_BLUE_PIN);
-#endif
 #endif
 
 #endif
